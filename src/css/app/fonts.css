@@ -1,0 +1,33 @@
+@define-mixin font-default $size: 1.8rem, $lineHeight: 1em {
+  font-family: sans-serif;
+	font-style: normal;
+	font-weight: 400;
+  @if ($size != null) {
+	  @mixin font-size $size, $lineHeight;
+  }
+}
+
+@define-mixin font-default-light $size: 1.8rem, $lineHeight: 1em {
+  @mixin font-default $size, $lineHeight;
+	font-weight: 300;
+}
+
+@define-mixin font-default-medium $size: 1.8rem, $lineHeight: 1em {
+	@mixin font-default $size;
+	font-weight: 500;
+}
+
+@define-mixin font-default-semi-bold $size: 1.8rem, $lineHeight: 1em {
+	@mixin font-default $size;
+	font-weight: 600;
+}
+
+@define-mixin font-default-bold $size: 1.8rem, $lineHeight: 1em {
+	@mixin font-default $size;
+	font-weight: 700;
+}
+
+@define-mixin font-size $size: 1.8rem, $lineHeight: 1em {
+	font-size: $size;
+	line-height: $lineHeight;
+}

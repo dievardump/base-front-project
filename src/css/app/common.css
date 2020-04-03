@@ -1,0 +1,30 @@
+html {
+	font-size: 62.5%;
+}
+
+body {
+  @mixin font-default 1.8rem;
+  background-color: var(--secondary);
+  color: var(--primary);
+  min-height: 100vh;
+  @mixin row-c-c;
+  text-align: center;
+}
+
+input, textarea, ::placeholder {
+	@mixin font-default 1.8rem;
+}
+
+:any-link {
+	text-decoration: none;
+	color: var(--primary);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+}
+
+h1 {
+  @mixin font-default-bold 7rem;
+}
+

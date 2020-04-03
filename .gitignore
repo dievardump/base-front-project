@@ -1,0 +1,11 @@
+# Node modules
+node_modules
+
+# Dist files as they are usually compiled with
+# a script by gitlab
+# remove those two lines if you don't have a CI process
+dist/css/*
+dist/js/*
+
+# to keep the dist folders
+!*.gitkeep

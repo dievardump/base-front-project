@@ -1,0 +1,29 @@
+@import '../../../node_modules/cssrecipes-defaults/index.css';
+
+ol,
+ul {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+*::before,
+*::after {
+	background-repeat: no-repeat;
+	background-position: 50%;
+	background-size: contain;
+}
+
+input {
+	border: 0;
+}
+
+*,
+*::after,
+*::before {
+	box-sizing: border-box;
+}
+
+[hidden] {
+	display: none !important;
+}
