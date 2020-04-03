@@ -1,14 +1,12 @@
-            DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
-                    Version 2, December 2004
+# commands
 
-Copyright (C) 2004 Sam Hocevar <sam@hocevar.net>
+`npm run dev` to launch dev mode (watch, local server)
 
-Everyone is permitted to copy and distribute verbatim or modified
-copies of this license document, and changing it is allowed as long
-as the name is changed.
+`npm run build` to build for production. Usually done by a CI script when pushing on master
 
-           DO WHAT THE FUCK YOU WANT TO PUBLIC LICENSE
-  TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
 
- 0. You just DO WHAT THE FUCK YOU WANT TO.
+# config
 
+config happens in `package.json` for files (under `config`)
+in `rollup.config.js` for js build
+in `postcss.config.js` for postcss
