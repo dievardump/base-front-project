@@ -16,7 +16,7 @@ const pkg = require('./package.json');
 import * as react_config from './rollup/react';
 
 const isProd = process.env.NODE_ENV !== 'development';
-const sources = path => `${__dirname}/src/${path}`;
+const sources = (path) => `${__dirname}/src/${path}`;
 const env_config_key = isProd ? 'prod' : 'dev';
 
 const js_in = pkg.config.js_in;
@@ -24,6 +24,29 @@ const js_out = pkg.config[env_config_key].js_out;
 
 // to keep entries in the manifest file
 const manifest = {};
+
+// Get children directories of js_in
+function getEntries() {
+  let entries = [];
+  let children = fs.readdirSync(js_in);
+  for (let child of children) {
+    try {
+      let entry_path = path.join(js_in, child);
+      if (fs.lstatSync(entry_path).isDirectory()) {
+        entries.push({ name: child, path: entry_path });
+      }
+    } catch (e) {}
+  }
+  return entries;
+}
+
+const entries = getEntries();
+const moduleConfigInput = {};
+const nomoduleConfigInputs = [];
+entries.forEach((entry) => {
+  moduleConfigInput[entry.name] = path.join(entry.path, 'main-module.mjs');
+  nomoduleConfigInputs.push({ [entry.name + '-nomodule']: path.join(entry.path, 'main-nomodule.mjs') });
+});
 
 /**
  * A Rollup plugin to generate a manifest of chunk names to their filenames
@@ -46,6 +69,37 @@ function manifestPlugin() {
       });
 
       cleanManifest(manifest, options);
+    },
+  };
+}
+
+/**
+ * A Rollup plugin to generate a list of import dependencies for each entry
+ * point in the module graph. This is then used by the template to generate
+ * the necessary `<link rel="modulepreload">` tags
+ * or for you to know what files should be exported with wich entry points
+ * if you separate sources at the end
+ * @return {Object}
+ */
+function modulepreloadPlugin() {
+  return {
+    name: 'modulepreload',
+    generateBundle(options, bundle) {
+      // A mapping of entry chunk names to their full dependency list.
+      const modulepreloadMap = {};
+
+      // Loop through all the chunks to detect entries.
+      for (const [fileName, chunkInfo] of Object.entries(bundle)) {
+        if (chunkInfo.isEntry || chunkInfo.isDynamicEntry) {
+          modulepreloadMap[chunkInfo.name] = [fileName, ...chunkInfo.imports];
+        }
+      }
+
+      this.emitFile({
+        type: 'asset',
+        fileName: 'modulepreload.json',
+        source: JSON.stringify(modulepreloadMap, null, 2),
+      });
     },
   };
 }
@@ -134,7 +188,7 @@ function basePlugins({ nomodule = false } = {}) {
       terser({
         module: !nomodule,
         output: {
-          comments: function(node, comment) {
+          comments: function (node, comment) {
             var text = comment.value;
             var type = comment.type;
             if (type == 'comment2') {
@@ -149,11 +203,8 @@ function basePlugins({ nomodule = false } = {}) {
   return plugins;
 }
 
-// Module config for <script type="module">
 const moduleConfig = {
-  input: {
-    main: js_in + 'main-module.mjs',
-  },
+  input: moduleConfigInput,
   output: {
     dir: js_out,
     format: 'esm',
@@ -161,7 +212,7 @@ const moduleConfig = {
     chunkFileNames: '[name]-[hash].mjs',
     dynamicImportFunction: '__import__',
   },
-  plugins: basePlugins(),
+  plugins: [...basePlugins(), modulepreloadPlugin()],
   manualChunks(id) {
     if (id.includes('node_modules')) {
       // The directory name following the last `node_modules`.
@@ -195,26 +246,31 @@ const moduleConfig = {
   },
 };
 
-// Legacy config for <script nomodule>
-const nomoduleConfig = {
-  input: {
-    nomodule: js_in + 'main-nomodule.mjs',
-  },
-  output: {
-    dir: js_out,
-    format: 'iife',
-    entryFileNames: '[name]-[hash].js',
-  },
-  plugins: basePlugins({ nomodule: true }),
-  inlineDynamicImports: true,
-  watch: {
-    clearScreen: false,
-  },
-};
+// create a nomodule config for a given entry point
+function makeNomoduleConfig(input) {
+  const nomoduleConfig = {
+    input: input,
+    output: {
+      dir: js_out,
+      format: 'iife',
+      entryFileNames: '[name]-[hash].js',
+    },
+    plugins: basePlugins({ nomodule: true }),
+    inlineDynamicImports: true,
+    watch: {
+      clearScreen: false,
+    },
+  };
+
+  return nomoduleConfig;
+}
 
 const configs = [moduleConfig];
+// if prod, add the no module config for all entries
 if (isProd) {
-  configs.push(nomoduleConfig);
+  nomoduleConfigInputs.forEach((input) => {
+    configs.push(makeNomoduleConfig(input));
+  });
 }
 
 export default configs;

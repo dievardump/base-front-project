@@ -23,7 +23,7 @@
       "js_out": "dist/js/"
     },
     "css_in": "src/css/*.css",
-    "js_in": "src/js/app/"
+    "js_in": "src/js/"
   },
   "author": "simon.fremaux",
   "private": true,
