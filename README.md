@@ -7,6 +7,7 @@
 
 # config
 
-config happens in `package.json` for files (under `config`)
-in `rollup.config.js` for js build
-in `postcss.config.js` for postcss
+config :
+- in `package.json` for files location (under `config`)
+- in `rollup.config.js` for js
+- in `postcss.config.js` for postcss
