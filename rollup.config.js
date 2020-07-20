@@ -39,6 +39,9 @@ const conf = {
 import manifest_plugin from './rollup/manifest';
 const manifest = manifest_plugin(conf);
 
+// plugin module preload
+import modulepreloadPlugin from './rollup/module-preload';
+
 // Get children directories of js_in
 function getEntries() {
   let entries = [];
@@ -61,37 +64,6 @@ entries.forEach((entry) => {
   moduleConfigInput[entry.name] = path.join(entry.path, 'main-module.mjs');
   nomoduleConfigInputs.push({ [entry.name + '-nomodule']: path.join(entry.path, 'main-nomodule.mjs') });
 });
-
-/**
- * A Rollup plugin to generate a list of import dependencies for each entry
- * point in the module graph. This is then used by the template to generate
- * the necessary `<link rel="modulepreload">` tags
- * or for you to know what files should be exported with wich entry points
- * if you separate sources at the end
- * @return {Object}
- */
-function modulepreloadPlugin() {
-  return {
-    name: 'modulepreload',
-    generateBundle(options, bundle) {
-      // A mapping of entry chunk names to their full dependency list.
-      const modulepreloadMap = {};
-
-      // Loop through all the chunks to detect entries.
-      for (const [fileName, chunkInfo] of Object.entries(bundle)) {
-        if (chunkInfo.isEntry || chunkInfo.isDynamicEntry) {
-          modulepreloadMap[chunkInfo.name] = [fileName, ...chunkInfo.imports];
-        }
-      }
-
-      this.emitFile({
-        type: 'asset',
-        fileName: 'modulepreload.json',
-        source: JSON.stringify(modulepreloadMap, null, 2),
-      });
-    },
-  };
-}
 
 function basePlugins({ nomodule = false } = {}) {
   const browsers = nomodule
