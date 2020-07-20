@@ -1,7 +1,6 @@
 // utils
 import path from 'path';
 import fs from 'fs-extra';
-import globby from 'globby';
 
 // rollup plugins
 import babel from 'rollup-plugin-babel';
@@ -13,7 +12,6 @@ import { terser } from 'rollup-plugin-terser';
 
 // configs
 const pkg = require('./package.json');
-import * as react_config from './rollup/react';
 
 const isProd = process.env.NODE_ENV !== 'development';
 const sources = (path) => `${__dirname}/src/${path}`;
@@ -22,8 +20,24 @@ const env_config_key = isProd ? 'prod' : 'dev';
 const js_in = pkg.config.js_in;
 const js_out = pkg.config[env_config_key].js_out;
 
-// to keep entries in the manifest file
-const manifest = {};
+const conf = {
+  isProd,
+  js_in,
+  js_out,
+  //...
+};
+
+// need react ?
+// import * as react_config from './rollup/react';
+// const react = react_config(conf);
+
+// need svelte ?
+// import * as svelte_config from './rollup/svelte';
+// const svelte = svelte_config(conf);
+
+// plugin manifest generator
+import manifest_plugin from './rollup/manifest';
+const manifest = manifest_plugin(conf);
 
 // Get children directories of js_in
 function getEntries() {
@@ -47,31 +61,6 @@ entries.forEach((entry) => {
   moduleConfigInput[entry.name] = path.join(entry.path, 'main-module.mjs');
   nomoduleConfigInputs.push({ [entry.name + '-nomodule']: path.join(entry.path, 'main-nomodule.mjs') });
 });
-
-/**
- * A Rollup plugin to generate a manifest of chunk names to their filenames
- * (including their content hash). This manifest is then used by the template
- * to point to the currect URL.
- * @return {Object}
- */
-function manifestPlugin() {
-  return {
-    name: 'manifest',
-    generateBundle(options, bundle) {
-      for (const [name, assetInfo] of Object.entries(bundle)) {
-        manifest[assetInfo.name] = name;
-      }
-
-      this.emitFile({
-        type: 'asset',
-        fileName: 'manifest.json',
-        source: JSON.stringify(manifest, null, 2),
-      });
-
-      cleanManifest(manifest, options);
-    },
-  };
-}
 
 /**
  * A Rollup plugin to generate a list of import dependencies for each entry
@@ -104,29 +93,6 @@ function modulepreloadPlugin() {
   };
 }
 
-/**
- * remove files that are not in the manifest
- * from the output dir
- * @param json manifest
- */
-async function cleanManifest(manifest, options) {
-  const path_output = options.dir || pkg.config[env_config_key].js_out;
-
-  const publicModules = new Set(await globby('*.+(js|mjs)', { cwd: path_output }));
-
-  // Remove files from the `publicModules` set if they're in the manifest.
-  for (const fileName of Object.values(manifest)) {
-    if (publicModules.has(fileName)) {
-      publicModules.delete(fileName);
-    }
-  }
-
-  // Delete all remaining modules (not in the manifest).
-  for (const fileName of publicModules) {
-    await fs.remove(path.join(path_output, fileName));
-  }
-}
-
 function basePlugins({ nomodule = false } = {}) {
   const browsers = nomodule
     ? ['ie 11']
@@ -147,8 +113,9 @@ function basePlugins({ nomodule = false } = {}) {
         '@helpers': sources('js/app/helpers'),
       },
     }),
+    // svelte.plugin,
     babel({
-      extensions: ['.js', '.mjs', '.jsx', '.html', '.svelte'],
+      extensions: ['.js', '.mjs', '.jsx', '.html'],
       include: ['src/**/*'],
       presets: [
         ['@babel/preset-typescript'],
@@ -162,12 +129,15 @@ function basePlugins({ nomodule = false } = {}) {
           },
         ],
       ],
-      plugins: ['@babel/plugin-proposal-export-namespace-from', '@babel/plugin-proposal-export-default-from'],
+      plugins: ['macros', '@babel/plugin-proposal-export-namespace-from', '@babel/plugin-proposal-export-default-from'],
     }),
     resolve({
       browser: true, // we're building for browsers - remove if not
       extensions: ['.mjs', '.js', '.jsx', '.ts', '.svelte', '.json'], // for react, typescript or svelte
-      dedupe: ['react', 'react-dom', 'svelte'], // if you are using react or svelte, always take the one installed locally and not from dep
+      dedupe: (importee) => {
+        // if you are using react or svelte, always take the one installed locally and not from dep
+        return importee.startsWith('react') || importee.startsWith('svelte');
+      },
     }),
     replace({
       'process.env.NODE_ENV': isProd ? JSON.stringify('production') : JSON.stringify('development'),
@@ -175,10 +145,10 @@ function basePlugins({ nomodule = false } = {}) {
     commonjs({
       include: 'node_modules/**',
       namedExports: {
-        ...react_config.namedExports,
+        //...react_config.namedExports,
       },
     }),
-    manifestPlugin(),
+    manifest.plugin,
   ];
   // Only add minification in production and when not running on Glitch.
   if (isProd) {

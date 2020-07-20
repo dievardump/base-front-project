@@ -41,6 +41,7 @@
     "@rollup/plugin-alias": "^3.0.1",
     "@rollup/plugin-replace": "^2.3.1",
     "axios": "^0.19.2",
+    "babel-plugin-macros": "^2.8.0",
     "classnames": "^2.2.6",
     "core-js": "^3.6.4",
     "cross-env": "^7.0.2",
