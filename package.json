@@ -5,13 +5,14 @@
   "scripts": {
     "dev": "cross-env-shell NODE_ENV=development npm-run-all --parallel server assets:watch",
     "server": "node server.js",
-    "build": "cross-env-shell NODE_ENV=production npm run assets:build",
+    "build": "cross-env-shell NODE_ENV=production npm run assets:build html:build",
     "assets:watch": "npm-run-all --parallel js:watch css:watch",
     "assets:build": "npm-run-all js:build css:build",
     "js:watch": "cross-env-shell ./node_modules/.bin/rollup -c -w",
     "js:build": "cross-env-shell ./node_modules/.bin/rollup -c",
     "css:build": "cross-env-shell ./node_modules/.bin/postcss $npm_package_config_css_in --no-map --dir $npm_package_config_prod_css_out",
-    "css:watch": "cross-env-shell ./node_modules/.bin/postcss $npm_package_config_css_in --no-map --dir $npm_package_config_dev_css_out --watch"
+    "css:watch": "cross-env-shell ./node_modules/.bin/postcss $npm_package_config_css_in --no-map --dir $npm_package_config_dev_css_out --watch",
+    "html:build": "node build.js"
   },
   "config": {
     "dev": {
@@ -20,10 +21,12 @@
     },
     "prod": {
       "css_out": "dist/css/",
-      "js_out": "dist/js/"
+      "js_out": "dist/js/",
+      "html_out": "dist/index.html"
     },
     "css_in": "src/css/*.css",
-    "js_in": "src/js/"
+    "js_in": "src/js/",
+    "html_in": "views/index.html"
   },
   "author": "simon.fremaux",
   "private": true,
@@ -64,6 +67,6 @@
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-terser": "^5.3.0",
-    "squirrelly": "^7.9.2"
+    "twing": "^5.0.2"
   }
 }

@@ -8,22 +8,24 @@ let express = require('express');
 let app = express();
 const pkg = require('./package.json');
 
+const { TwingEnvironment, TwingLoaderFilesystem } = require('twing');
+let loader = new TwingLoaderFilesystem('./views');
+let twing = new TwingEnvironment(loader);
+
 app.use(express.static('dist'));
 
-app.engine('html', require('squirrelly').__express);
-
-// setting up squirrelly templates under views
-app.set('views', './views');
-
 // setting up /
-app.get('/', async function (req, res) {
+app.get('*', async function (req, res) {
   const path = `${__dirname}/${pkg.config.dev.js_out}manifest.json`;
   // delete manifest from cache else it will always load the same
   delete require.cache[require.resolve(path)];
   const manifest = require(path);
-  res.render('index.html', {
-    manifest,
-  });
+
+  twing
+    .render('index.html', {
+      manifest,
+    })
+    .then((output) => res.end(output));
 });
 
 const port = process.env.PORT || 3333;
